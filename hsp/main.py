@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import numpy as np
 import torch
+import random
 import data
 from models import *
 from utils import *
@@ -18,6 +19,30 @@ torch.utils.backcompat.broadcast_warning.enabled = True
 torch.utils.backcompat.keepdim_warning.enabled = True
 
 torch.set_default_tensor_type('torch.DoubleTensor')
+# this repository only uses torch-cpu
+using_cuda = False # torch.cuda.is_available()
+device = 'cuda' if using_cuda else 'cpu' # torch.device('cuda' if using_cuda else 'cpu')
+print('using device:', device)
+
+# from stable_baselines3
+def set_random_seed(seed: int, using_cuda: bool = False) -> None:
+    """
+    Seed the different random generators
+    :param seed: (int)
+    :param using_cuda: (bool)
+    """
+    print('setting random seed to', seed)
+    # Seed python RNG
+    random.seed(seed)
+    # Seed numpy RNG
+    np.random.seed(seed)
+    # seed the RNG for all devices (both CPU and CUDA)
+    torch.manual_seed(seed)
+
+    if using_cuda:
+        # Deterministic operations for CuDNN, it may impact performances
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 parser = argparse.ArgumentParser(description='Reinforce, Asymmetric Self-Play, Hiearchical Self-Play')
 # training related
@@ -125,6 +150,8 @@ parser.add_argument('--charlie_nodiff', default=False, action='store_true',
                     help='ignore goal_diff and directly feed Charlies action to the goal policy ')
 args = parser.parse_args()
 print(args)
+set_random_seed(args.seed)
+
 
 if args.sp_asym:
     assert args.sp_extra_action
@@ -152,6 +179,7 @@ if args.charlie:
         return env
 else:
     def init_env(args):
+        # data.py is a factory for different environments
         env = data.init(args.env_name, args)
         if args.sp:
             from self_play import SelfPlayWrapper
@@ -164,8 +192,11 @@ num_inputs = env.observation_dim
 args.num_actions = env.num_actions
 args.dim_actions = env.dim_actions
 parse_action_args(args)
-if args.seed >= 0:
-    torch.manual_seed(args.seed)
+#if args.seed >= 0:
+#    torch.manual_seed(args.seed)
+    
+
+
 
 if args.recurrent:
     policy_net = RNN(args, num_inputs)

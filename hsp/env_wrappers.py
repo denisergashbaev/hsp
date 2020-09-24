@@ -1,3 +1,4 @@
+import torch
 import time
 import numpy as np
 import torch
@@ -127,7 +128,9 @@ class RLLabWrapper(EnvWrapper):
 
 
 class MazeBaseWrapper(EnvWrapper):
+    # this is a dirty code: both 'game' and 'config' is mazebase_env import mazebase_env/sp_goal.py
     def __init__(self, name, game, config):
+        # creates a dictionary of GameOpts objects (which is a fancy dict) containing the values for 'sp_goal' env
         opts = config.get_opts()
         game_opts = opts['game_opts']
         max_h = game_opts['map_height'].max_possible()
@@ -136,6 +139,8 @@ class MazeBaseWrapper(EnvWrapper):
             'max_map_sizes': (max_w, max_h)}
         opts['featurizer'] = featurizer_opts
         self.factory = game.Factory(name, opts, game.Game)
+        # factory.dictionary returns dictionary of possible objects in the game ('corner', 'block', ..., 'goal0') 
+        # see sp_goal.py#Factory#all_vocab()
         self.featurizer = GridFeaturizer(featurizer_opts, self.factory.dictionary)
         env = self.factory.init_random_game()
         super(MazeBaseWrapper, self).__init__(env)

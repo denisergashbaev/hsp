@@ -128,7 +128,8 @@ class RLLabWrapper(EnvWrapper):
 
 
 class MazeBaseWrapper(EnvWrapper):
-    # this is a dirty code: both 'game' and 'config' is mazebase_env import mazebase_env/sp_goal.py
+    # this is a dirty code: both of the variables 'game' and 'config' refer to the same module 
+    # mazebase_env/sp_goal.py (which contains Game, Factory, and #get_opts())
     def __init__(self, name, game, config):
         # creates a dictionary of GameOpts objects (which is a fancy dict) containing the values for 'sp_goal' env
         opts = config.get_opts()
@@ -141,6 +142,7 @@ class MazeBaseWrapper(EnvWrapper):
         self.factory = game.Factory(name, opts, game.Game)
         # factory.dictionary returns dictionary of possible objects in the game ('corner', 'block', ..., 'goal0') 
         # see sp_goal.py#Factory#all_vocab()
+        # GridFeaturizer creates a tensor representing the environment (width x height x vocab_size) -- sort of many-hot representations
         self.featurizer = GridFeaturizer(featurizer_opts, self.factory.dictionary)
         env = self.factory.init_random_game()
         super(MazeBaseWrapper, self).__init__(env)
